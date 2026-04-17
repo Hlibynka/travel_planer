@@ -19,8 +19,9 @@ class ProjectSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'start_date', 'is_completed', 'places']
 
     def validate_places(self, value):
-        if len(value) > 10:
-            raise serializers.ValidationError("Maximum 10 places per project.")
+        ids = [item['external_id'] for item in value]
+        if len(ids) != len(set(ids)):
+            raise serializers.ValidationError("Duplicate places in the request are not allowed.")
         return value
 
     def create(self, validated_data):

@@ -1,4 +1,6 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
+
 from .models import Project, Place
 
 
@@ -13,6 +15,19 @@ class ProjectAdmin(admin.ModelAdmin):
     list_filter = ('is_completed',)
     search_fields = ('name',)
     inlines = [PlaceInline]
+
+    def delete_model(self, request, obj):
+        try:
+            obj.delete()
+        except ValidationError as e:
+            messages.error(request, e.message)
+
+    def delete_queryset(self, request, queryset):
+        for obj in queryset:
+            if obj.places.filter(is_visited=True).exists():
+                messages.error(request, f"Project '{obj.name}' has visited places and cannot be deleted.")
+                return
+        queryset.delete()
 
 @admin.register(Place)
 class PlaceAdmin(admin.ModelAdmin):

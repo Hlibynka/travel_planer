@@ -15,14 +15,24 @@ class Project(models.Model):
             raise ValidationError("Cannot delete project with visited places.")
         super().delete(*args, **kwargs)
 
+
 class Place(models.Model):
     project = models.ForeignKey(Project, related_name='places', on_delete=models.CASCADE)
-    external_id = models.IntegerField()  # ID з Art Institute API
+    external_id = models.IntegerField()
     notes = models.TextField(blank=True, null=True)
     is_visited = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('project', 'external_id')
 
-    def __str__(self):
-        return f"Place {self.external_id} in {self.project.name}"
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        project = self.project
+
+        if not project.places.filter(is_visited=False).exists():
+            project.is_completed = True
+        else:
+            project.is_completed = False
+
+        project.save()
